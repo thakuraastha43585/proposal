@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proposal SaaS — Refactored</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Parisienne&display=swap" rel="stylesheet">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/js-confetti/1.6.0/js-confetti.browser.js"></script>
+  <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    :root {
+      --pink: #ff6fb0;
+      --rose: #ff4d8b;
+      --coral: #ff8c69;
+      --peach: #ffb347;
+      --plum: #a546b8;
+      --white: #ffffff;
+      --text: #fff7fb;
+      --muted: rgba(255, 247, 251, 0.78);
+      --glass: rgba(255, 255, 255, 0.16);
+      --glass-strong: rgba(255, 255, 255, 0.22);
+      --border: rgba(255, 255, 255, 0.32);
+      --shadow: 0 18px 55px rgba(138, 20, 78, 0.23);
+      --shadow-soft: 0 10px 32px rgba(255, 96, 155, 0.16);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --transition: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.2), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(255,220,235,0.18), transparent 32%),
+        linear-gradient(135deg, #ff6fb0 0%, #ff8c69 38%, #ffb347 72%, #ffd1a9 100%);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    img { display: block; max-width: 100%; }
+
+    .app-shell {
+      min-height: 100vh;
+      padding: 28px 16px 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ambient-hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .ambient-heart {
+      position: absolute;
+      bottom: -40px;
+      opacity: 0;
+      color: rgba(255,255,255,0.35);
+      animation: ambientFloat linear infinite;
+      user-select: none;
+    }
+
+    @keyframes ambientFloat {
+      0% { transform: translateY(0) translateX(0) scale(0.9) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.85; }
+      100% { transform: translateY(-115vh) translateX(20px) scale(1.2) rotate(20deg); opacity: 0; }
+    }
+
+    .flow {
+      width: min(100%, 860px);
+      display: grid;
+      gap: 24px;
+    }
+
+    .glass-panel {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .screen {
+      display: none;
+      padding: clamp(22px, 4vw, 36px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen.active { display: block; }
+
+    .builder-head,
+    .preview-head,
+    .payment-head {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.26);
+      color: rgba(255,255,255,0.9);
+      font-size: 0.84rem;
+      margin-bottom: 12px;
+    }
+
+    h1, h2 {
+      font-weight: 800;
+      line-height: 1.08;
+      text-shadow: 0 3px 14px rgba(124, 24, 73, 0.15);
+    }
+
+    h1 { font-size: clamp(2rem, 5vw, 3.1rem); }
+    h2 { font-size: clamp(1.65rem, 4vw, 2.2rem); }
+
+    .subcopy {
+      color: var(--muted);
+      max-width: 42ch;
+      margin: 10px auto 0;
+      line-height: 1.6;
+      font-size: 0.98rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .field input,
+    .field textarea,
+    .coupon-input {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+      padding: 14px 16px;
+      outline: none;
+      transition: transform var(--transition), border-color var(--transition), background var(--transition), box-shadow var(--transition);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      min-height: 52px;
+    }
+
+    .field textarea {
+      min-height: 132px;
+      resize: vertical;
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder,
+    .coupon-input::placeholder { color: rgba(255,255,255,0.62); }
+
+    .field input:focus,
+    .field textarea:focus,
+    .coupon-input:focus {
+      border-color: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.28);
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.1);
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn,
+    .pay-btn,
+    .coupon-btn {
+      min-height: 52px;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition), opacity var(--transition);
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,225,238,0.94));
+      color: var(--rose);
+      box-shadow: 0 12px 30px rgba(255,255,255,0.22), 0 10px 28px rgba(255,77,139,0.28);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .ghost-btn:hover,
+    .pay-btn:hover,
+    .coupon-btn:hover { transform: translateY(-2px); }
+
+    .secondary-btn,
+    .pay-btn,
+    .coupon-btn {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 13px 18px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .ghost-btn {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.38);
+      padding: 13px 18px;
+    }
+
+    .proposal-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 30px;
+      min-height: 620px;
+      padding: clamp(26px, 4vw, 38px);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.24), transparent 24%),
+        radial-gradient(circle at 80% 0%, rgba(255,240,247,0.18), transparent 28%),
+        linear-gradient(145deg, rgba(255,111,176,0.98), rgba(255,140,105,0.96), rgba(255,179,71,0.95));
+      box-shadow: 0 22px 60px rgba(133, 21, 73, 0.28);
+      isolation: isolate;
+    }
+
+    .proposal-card.final-mode .watermark,
+    .proposal-card.success-mode .watermark { display: none; }
+
+    .card-floating-hearts,
+    .confetti-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .card-heart {
+      position: absolute;
+      bottom: -32px;
+      font-size: 1.05rem;
+      opacity: 0;
+      animation: cardHeartFloat linear infinite;
+    }
+
+    @keyframes cardHeartFloat {
+      0% { transform: translateY(0) scale(0.85) rotate(0deg); opacity: 0; }
+      12% { opacity: 0.92; }
+      100% { transform: translateY(-118%) scale(1.15) rotate(20deg); opacity: 0; }
+    }
+
+    .watermark {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(3.4rem, 12vw, 8rem);
+      letter-spacing: 0.5rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.2);
+      transform: rotate(-24deg);
+      z-index: 0;
+      user-select: none;
+      pointer-events: none;
+      text-transform: uppercase;
+    }
+
+    .proposal-main,
+    .success-view {
+      position: relative;
+      z-index: 2;
+    }
+
+    .proposal-main.hidden,
+    .success-view.hidden { display: none; }
+
+    .from-text {
+      text-align: center;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .question {
+      text-align: center;
+      font-family: 'Parisienne', cursive;
+      font-size: clamp(2.3rem, 7vw, 4.3rem);
+      line-height: 1;
+      color: #fffafc;
+      margin-bottom: 6px;
+      text-shadow: 0 6px 18px rgba(130, 16, 72, 0.18);
+    }
+
+    .recipient {
+      text-align: center;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .message-box {
+      max-width: 32ch;
+      margin: 0 auto 28px;
+      text-align: center;
+      color: rgba(255,255,255,0.95);
+      line-height: 1.75;
+      font-size: 1rem;
+    }
+
+    .interaction-zone {
+      position: relative;
+      margin: 0 auto;
+      width: min(100%, 430px);
+      height: 170px;
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    .yes-btn,
+    .no-btn {
+      position: absolute;
+      min-width: 130px;
+      min-height: 54px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(122, 17, 67, 0.18);
+      touch-action: manipulation;
+    }
+
+    .yes-btn {
+      left: 22px;
+      bottom: 20px;
+      background: linear-gradient(135deg, #fff, #ffe3f0);
+      color: var(--rose);
+      z-index: 2;
+    }
+
+    .no-btn {
+      left: calc(100% - 152px);
+      top: 22px;
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.48);
+      transition: left 260ms cubic-bezier(0.16, 1, 0.3, 1), top 260ms cubic-bezier(0.16, 1, 0.3, 1), transform var(--transition), background var(--transition);
+      z-index: 2;
+    }
+
+    .interaction-caption {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      max-width: 180px;
+      color: rgba(255,255,255,0.82);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      z-index: 1;
+    }
+
+    .success-view {
+      text-align: center;
+      padding-top: 12px;
+    }
+
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.28);
+      margin-bottom: 14px;
+    }
+
+    .success-title {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .success-text {
+      color: rgba(255,255,255,0.92);
+      line-height: 1.7;
+      max-width: 30ch;
+      margin: 0 auto 18px;
+    }
+
+    .cat-gif {
+      width: min(100%, 240px);
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      border: 4px solid rgba(255,255,255,0.55);
+      box-shadow: 0 14px 36px rgba(125, 14, 66, 0.24);
+    }
+
+    .generate-link-wrap {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .payment-panel {
+      display: none;
+      padding: clamp(22px, 4vw, 34px);
+    }
+
+    .payment-panel.active { display: block; }
+
+    .price-card {
+      display: grid;
+      gap: 18px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.24);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .price-line {
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .price-now {
+      font-size: clamp(2.8rem, 7vw, 4rem);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .price-old {
+      color: rgba(255,255,255,0.68);
+      text-decoration: line-through;
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+    }
+
+    .price-note {
+      text-align: center;
+      color: rgba(255,255,255,0.84);
+      font-size: 0.95rem;
+    }
+
+    .features-list {
+      display: grid;
+      gap: 10px;
+      list-style: none;
+      color: rgba(255,255,255,0.93);
+    }
+
+    .features-list li {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .coupon-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .coupon-feedback,
+    .payment-feedback {
+      min-height: 24px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .coupon-feedback.success,
+    .payment-feedback.success { color: #e8ffe7; }
+    .coupon-feedback.error,
+    .payment-feedback.error { color: #ffe7f1; }
+    .coupon-feedback.info,
+    .payment-feedback.info { color: rgba(255,255,255,0.84); }
+
+    .final-link-box {
+      display: none;
+      margin-top: 18px;
+      gap: 12px;
+      grid-template-columns: 1fr auto;
+    }
+
+    .final-link-box.active { display: grid; }
+
+    .final-link {
+      min-height: 52px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.26);
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      padding: 14px 16px;
+    }
+
+    .final-proposal-screen {
+      display: none;
+      padding: clamp(22px, 4vw, 36px);
+    }
+
+    .final-proposal-screen.active { display: block; }
+
+    .top-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .helper-card {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 20px;
+      padding: 16px 18px;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 640px) {
+      .app-shell { padding: 16px 12px 30px; }
+      .screen, .payment-panel, .final-proposal-screen { padding: 20px 16px; }
+      .proposal-card { min-height: 640px; padding: 22px 16px 24px; }
+      .interaction-zone { height: 185px; }
+      .yes-btn, .no-btn { min-width: 118px; min-height: 52px; font-size: 0.96rem; }
+      .coupon-row, .final-link-box { grid-template-columns: 1fr; }
+      .coupon-btn, .ghost-btn, .secondary-btn, .pay-btn { width: 100%; }
+      .interaction-caption { max-width: 150px; font-size: 0.88rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-hearts" id="ambientHearts" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <div class="flow">
+      <section class="screen glass-panel active" id="builderScreen" aria-labelledby="builderTitle">
+        <div class="builder-head">
+          <div class="eyebrow">💌 Proposal Builder</div>
+          <h1 id="builderTitle">Craft a romantic proposal experience</h1>
+          <p class="subcopy">Only the essentials stay here: recipient name, sender name, and your personal message. Everything else flows smoothly after preview.</p>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="recipientName">Recipient Name</label>
+            <input id="recipientName" type="text" maxlength="60" placeholder="e.g. Priya" />
+          </div>
+          <div class="field">
+            <label for="senderName">Sender Name</label>
+            <input id="senderName" type="text" maxlength="60" placeholder="e.g. Aryan" />
+          </div>
+          <div class="field">
+            <label for="personalMessage">Personal Message</label>
+            <textarea id="personalMessage" maxlength="600" placeholder="Write something sweet, personal, and unforgettable..."></textarea>
+          </div>
+          <button id="previewBtn" class="primary-btn" type="button">Preview ❤️</button>
+        </div>
+      </section>
+
+      <section class="screen glass-panel" id="previewScreen" aria-labelledby="previewTitle">
+        <div class="preview-head">
+          <div class="eyebrow">💕 Preview Mode</div>
+          <h2 id="previewTitle">See the proposal before unlocking the final link</h2>
+          <p class="subcopy">The watermark is visible only in preview mode. The final paid page removes it automatically.</p>
+        </div>
+
+        <article class="proposal-card" id="proposalCard">
+          <div class="card-floating-hearts" id="cardHearts" aria-hidden="true"></div>
+          <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+          <div class="watermark" id="previewWatermark">PREVIEW</div>
+
+          <div class="proposal-main" id="proposalMain">
+            <p class="from-text" id="fromText">From: Your name ❤️</p>
+            <div class="question">Will you be mine?</div>
+            <div class="recipient" id="recipientText">Recipient Name</div>
+            <div class="message-box" id="messageText">Your sweet message will appear here with all the romantic vibes still intact.</div>
+
+            <div class="interaction-zone" id="interactionZone">
+              <p class="interaction-caption">Try catching the NO button 😏</p>
+              <button id="yesBtn" class="yes-btn" type="button">YES ❤️</button>
+              <button id="noBtn" class="no-btn" type="button">NO 😏</button>
+            </div>
+          </div>
+
+          <div class="success-view hidden" id="successView">
+            <div class="success-badge">🎉 It’s a yes moment</div>
+            <h3 class="success-title">Aww... that worked beautifully 💖</h3>
+            <p class="success-text">Your proposal just turned into a celebration. Here’s the cute cat, confetti, and the next step to generate a permanent shareable link.</p>
+            <img class="cat-gif" id="catGif" src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3NqZHJta2Nha202MDIzb3V2Y2xod2Q0amE0eGpqbGdmd2hhN25sayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EzP85aNlqGXWo/giphy.gif" alt="Cute celebratory cat GIF" loading="lazy" width="240" height="240" />
+            <div class="generate-link-wrap">
+              <button id="generateLinkBtn" class="primary-btn" type="button" style="max-width:320px;">Generate Link 🔗</button>
+            </div>
+          </div>
+        </article>
+
+        <div class="top-actions">
+          <button id="backToBuilderBtn" class="ghost-btn" type="button">Edit details</button>
+        </div>
+      </section>
+
+      <section class="payment-panel glass-panel" id="paymentPanel" aria-labelledby="paymentTitle">
+        <div class="payment-head">
+          <div class="eyebrow">💳 Secure Checkout</div>
+          <h2 id="paymentTitle">Unlock the final proposal page for ₹99</h2>
+          <p class="subcopy">The paid version removes the preview watermark and generates a shareable final proposal URL.</p>
+        </div>
+
+        <div class="price-card">
+          <div class="price-line">
+            <div class="price-now" id="finalPrice">₹99</div>
+            <div class="price-old" id="originalPriceLabel">₹99</div>
+          </div>
+          <p class="price-note" id="discountNote">Apply a coupon to lower the price instantly.</p>
+
+          <ul class="features-list">
+            <li>✨ Permanent proposal link</li>
+            <li>✨ No preview watermark</li>
+            <li>✨ Shareable URL</li>
+            <li>✨ Mobile optimized</li>
+          </ul>
+
+          <div class="coupon-row">
+            <input id="couponInput" class="coupon-input" type="text" placeholder="Enter coupon code" maxlength="20" />
+            <button id="applyCouponBtn" class="coupon-btn" type="button">Apply Coupon</button>
+          </div>
+          <div class="coupon-feedback info" id="couponFeedback">Available coupons: LOVE50, FIRST20, JOY30.</div>
+
+          <button id="payNowBtn" class="pay-btn" type="button">Pay with Razorpay</button>
+          <div class="payment-feedback info" id="paymentFeedback">Razorpay checkout uses a placeholder test key here. Connect backend order creation and signature verification before production go-live.</div>
+
+          <div class="final-link-box" id="finalLinkBox">
+            <input id="finalLinkInput" class="final-link" type="text" readonly aria-label="Generated final proposal link" />
+            <button id="copyLinkBtn" class="secondary-btn" type="button">Copy Link</button>
+          </div>
+        </div>
+
+        <div class="helper-card">
+          Backend notes: create an order on your server before checkout, verify the payment signature server-side after success, then persist the proposal data in your database and return a permanent final URL.
+        </div>
+      </section>
+
+      <section class="final-proposal-screen glass-panel" id="finalScreen" aria-labelledby="finalTitle">
+        <div class="preview-head">
+          <div class="eyebrow">🔗 Final Proposal</div>
+          <h2 id="finalTitle">Share-ready final experience</h2>
+          <p class="subcopy">This view hides all builder controls, payment UI, and watermark to simulate the final proposal page after verified payment.</p>
+        </div>
+
+        <article class="proposal-card final-mode" id="finalProposalCard">
+          <div class="card-floating-hearts" id="finalCardHearts" aria-hidden="true"></div>
+          <div class="confetti-layer" id="finalConfettiLayer" aria-hidden="true"></div>
+
+          <div class="proposal-main" id="finalProposalMain">
+            <p class="from-text" id="finalFromText">From: Your name ❤️</p>
+            <div class="question">Will you be mine?</div>
+            <div class="recipient" id="finalRecipientText">Recipient Name</div>
+            <div class="message-box" id="finalMessageText">Your final message lives here with no editing controls.</div>
+
+            <div class="interaction-zone" id="finalInteractionZone">
+              <p class="interaction-caption">The NO button still plays hard to get 😏</p>
+              <button id="finalYesBtn" class="yes-btn" type="button">YES ❤️</button>
+              <button id="finalNoBtn" class="no-btn" type="button">NO 😏</button>
+            </div>
+          </div>
+
+          <div class="success-view hidden" id="finalSuccessView">
+            <div class="success-badge">🎉 It’s official</div>
+            <h3 class="success-title">The final proposal is now pure romance 💞</h3>
+            <p class="success-text">No watermark, no editing controls, just the romantic experience with floating hearts, the cat GIF, and celebration.</p>
+            <img class="cat-gif" src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3NqZHJta2Nha202MDIzb3V2Y2xod2Q0amE0eGpqbGdmd2hhN25sayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EzP85aNlqGXWo/giphy.gif" alt="Cute celebratory cat GIF" loading="lazy" width="240" height="240" />
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const BASE_PRICE = 99;
+    const coupons = {
+      LOVE50: 50,
+      FIRST20: 20,
+      JOY: 98,
+      FEIN:100
+    };
+
+    const state = {
+      sender: '',
+      recipient: '',
+      message: '',
+      appliedCoupon: null,
+      discountPercent: 0,
+      finalPrice: BASE_PRICE,
+      paymentCompleted: false,
+      generatedLink: '',
+      previewYesSelected: false,
+      finalYesSelected: false
+    };
+
+    const els = {
+      builderScreen: document.getElementById('builderScreen'),
+      previewScreen: document.getElementById('previewScreen'),
+      paymentPanel: document.getElementById('paymentPanel'),
+      finalScreen: document.getElementById('finalScreen'),
+      recipientName: document.getElementById('recipientName'),
+      senderName: document.getElementById('senderName'),
+      personalMessage: document.getElementById('personalMessage'),
+      previewBtn: document.getElementById('previewBtn'),
+      backToBuilderBtn: document.getElementById('backToBuilderBtn'),
+      fromText: document.getElementById('fromText'),
+      recipientText: document.getElementById('recipientText'),
+      messageText: document.getElementById('messageText'),
+      proposalMain: document.getElementById('proposalMain'),
+      successView: document.getElementById('successView'),
+      proposalCard: document.getElementById('proposalCard'),
+      previewWatermark: document.getElementById('previewWatermark'),
+      yesBtn: document.getElementById('yesBtn'),
+      noBtn: document.getElementById('noBtn'),
+      interactionZone: document.getElementById('interactionZone'),
+      generateLinkBtn: document.getElementById('generateLinkBtn'),
+      finalPrice: document.getElementById('finalPrice'),
+      originalPriceLabel: document.getElementById('originalPriceLabel'),
+      discountNote: document.getElementById('discountNote'),
+      couponInput: document.getElementById('couponInput'),
+      applyCouponBtn: document.getElementById('applyCouponBtn'),
+      couponFeedback: document.getElementById('couponFeedback'),
+      payNowBtn: document.getElementById('payNowBtn'),
+      paymentFeedback: document.getElementById('paymentFeedback'),
+      finalLinkBox: document.getElementById('finalLinkBox'),
+      finalLinkInput: document.getElementById('finalLinkInput'),
+      copyLinkBtn: document.getElementById('copyLinkBtn'),
+      finalProposalCard: document.getElementById('finalProposalCard'),
+      finalFromText: document.getElementById('finalFromText'),
+      finalRecipientText: document.getElementById('finalRecipientText'),
+      finalMessageText: document.getElementById('finalMessageText'),
+      finalProposalMain: document.getElementById('finalProposalMain'),
+      finalSuccessView: document.getElementById('finalSuccessView'),
+      finalYesBtn: document.getElementById('finalYesBtn'),
+      finalNoBtn: document.getElementById('finalNoBtn'),
+      finalInteractionZone: document.getElementById('finalInteractionZone'),
+      cardHearts: document.getElementById('cardHearts'),
+      finalCardHearts: document.getElementById('finalCardHearts'),
+      ambientHearts: document.getElementById('ambientHearts')
+    };
+
+    const jsConfetti = window.JSConfetti ? new JSConfetti() : null;
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function createAmbientHearts() {
+      for (let i = 0; i < 18; i += 1) {
+        const heart = document.createElement('span');
+        heart.className = 'ambient-heart';
+        heart.textContent = ['❤','💖','💕','💗'][i % 4];
+        heart.style.left = `${Math.random() * 100}%`;
+        heart.style.fontSize = `${14 + Math.random() * 14}px`;
+        heart.style.animationDuration = `${8 + Math.random() * 8}s`;
+        heart.style.animationDelay = `${Math.random() * 7}s`;
+        els.ambientHearts.appendChild(heart);
+      }
+    }
+
+    function createCardHearts(container, count) {
+      for (let i = 0; i < count; i += 1) {
+        const heart = document.createElement('span');
+        heart.className = 'card-heart';
+        heart.textContent = ['❤','💘','💞','💕'][i % 4];
+        heart.style.left = `${Math.random() * 100}%`;
+        heart.style.fontSize = `${12 + Math.random() * 12}px`;
+        heart.style.animationDuration = `${5 + Math.random() * 4}s`;
+        heart.style.animationDelay = `${Math.random() * 5}s`;
+        heart.style.opacity = '0';
+        container.appendChild(heart);
+      }
+    }
+
+    function syncStateFromInputs() {
+      state.recipient = els.recipientName.value.trim();
+      state.sender = els.senderName.value.trim();
+      state.message = els.personalMessage.value.trim();
+    }
+
+    function getResolvedRecipient() {
+      return state.recipient || 'Someone Special';
+    }
+
+    function getResolvedSender() {
+      return state.sender || 'Your Secret Admirer';
+    }
+
+    function getResolvedMessage() {
+      return state.message || 'Every heartbeat feels softer when I think about you. This little page is just my way of saying that you mean more to me than words usually can.';
+    }
+
+    function updatePreviewContent() {
+      syncStateFromInputs();
+      const sender = escapeHtml(getResolvedSender());
+      const recipient = escapeHtml(getResolvedRecipient());
+      const message = escapeHtml(getResolvedMessage()).replace(/\n/g, '<br>');
+
+      els.fromText.innerHTML = `From: ${sender} ❤️`;
+      els.recipientText.textContent = getResolvedRecipient();
+      els.messageText.innerHTML = message;
+
+      els.finalFromText.innerHTML = `From: ${sender} ❤️`;
+      els.finalRecipientText.textContent = getResolvedRecipient();
+      els.finalMessageText.innerHTML = message;
+    }
+
+    function showOnly(screenKey) {
+      ['builderScreen', 'previewScreen', 'paymentPanel', 'finalScreen'].forEach((key) => {
+        els[key].classList.remove('active');
+      });
+      els[screenKey].classList.add('active');
+    }
+
+    function resetPreviewSuccessState() {
+      state.previewYesSelected = false;
+      els.proposalMain.classList.remove('hidden');
+      els.successView.classList.add('hidden');
+      els.proposalCard.classList.remove('success-mode');
+      els.previewWatermark.style.display = 'flex';
+    }
+
+    function resetFinalSuccessState() {
+      state.finalYesSelected = false;
+      els.finalProposalMain.classList.remove('hidden');
+      els.finalSuccessView.classList.add('hidden');
+      els.finalProposalCard.classList.remove('success-mode');
+    }
+
+    function validateBuilder() {
+      syncStateFromInputs();
+      if (!state.recipient || !state.sender || !state.message) {
+        alert('Please fill Recipient Name, Sender Name, and Personal Message before previewing.');
+        return false;
+      }
+      return true;
+    }
+
+    function goToPreview() {
+      if (!validateBuilder()) return;
+      updatePreviewContent();
+      resetPreviewSuccessState();
+      showOnly('previewScreen');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      resetRunawayButton(els.noBtn, els.interactionZone);
+    }
+
+    function showPaymentPanel() {
+      els.paymentPanel.classList.add('active');
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function applyCoupon() {
+    const code = els.couponInput.value.trim().toUpperCase();
+
+    if (!code) {
+        setCouponFeedback('Please enter a coupon code.', 'error');
+        return;
+    }
+
+    if (state.appliedCoupon) {
+        setCouponFeedback(
+            `Coupon ${state.appliedCoupon} is already applied. Multiple coupon stacking is disabled.`,
+            'error'
+        );
+        return;
+    }
+
+    // FEIN = Free Access
+    if (code === "FEIN") {
+        state.appliedCoupon = code;
+        state.discountPercent = 100;
+        state.finalPrice = 0;
+
+        refreshPricing();
+
+        setCouponFeedback(
+            'FEIN applied successfully. Free access unlocked 🎉',
+            'success'
+        );
+
+        return;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(coupons, code)) {
+        setCouponFeedback(
+            'Invalid coupon code. Try LOVE50, FIRST20, JOY or FEIN.',
+            'error'
+        );
+        return;
+    }
+
+    state.appliedCoupon = code;
+    state.discountPercent = coupons[code];
+
+    state.finalPrice = Math.max(
+        1,
+        Math.round(BASE_PRICE * (100 - state.discountPercent) / 100)
+    );
+
+    refreshPricing();
+
+    if (code === "JOY") {
+        state.finalPrice = 1;
+        refreshPricing();
+
+        setCouponFeedback(
+            'JOY applied successfully. Price reduced to ₹1 🎉',
+            'success'
+        );
+    } else {
+        setCouponFeedback(
+            `${code} applied successfully. You saved ${state.discountPercent}%.`,
+            'success'
+        );
+    }
+}
+
+    function setCouponFeedback(message, type) {
+      els.couponFeedback.className = `coupon-feedback ${type}`;
+      els.couponFeedback.textContent = message;
+    }
+
+    function setPaymentFeedback(message, type) {
+      els.paymentFeedback.className = `payment-feedback ${type}`;
+      els.paymentFeedback.textContent = message;
+    }
+
+    function refreshPricing() {
+      els.finalPrice.textContent = `₹${state.finalPrice}`;
+      if (state.discountPercent > 0) {
+        els.originalPriceLabel.style.visibility = 'visible';
+        els.originalPriceLabel.textContent = `₹${BASE_PRICE}`;
+        els.discountNote.textContent = `${state.discountPercent}% off applied. Final payable amount updated dynamically.`;
+      } else {
+        els.originalPriceLabel.style.visibility = 'hidden';
+        els.originalPriceLabel.textContent = `₹${BASE_PRICE}`;
+        els.discountNote.textContent = 'Apply a coupon to lower the price instantly.';
+      }
+    }
+
+    function launchConfetti() {
+      if (!jsConfetti) return;
+      jsConfetti.addConfetti({
+        emojis: ['💖', '💕', '💘', '💞', '✨'],
+        emojiSize: 34,
+        confettiNumber: 60
+      }).catch(() => {});
+    }
+
+    function activatePreviewSuccess() {
+      state.previewYesSelected = true;
+      els.proposalMain.classList.add('hidden');
+      els.successView.classList.remove('hidden');
+      els.proposalCard.classList.add('success-mode');
+      els.previewWatermark.style.display = 'none';
+      launchConfetti();
+    }
+
+    function activateFinalSuccess() {
+      state.finalYesSelected = true;
+      els.finalProposalMain.classList.add('hidden');
+      els.finalSuccessView.classList.remove('hidden');
+      els.finalProposalCard.classList.add('success-mode');
+      launchConfetti();
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function moveNoButton(button, zone) {
+      const zoneRect = zone.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      const padding = 10;
+      const maxLeft = Math.max(padding, zoneRect.width - buttonRect.width - padding);
+      const maxTop = Math.max(padding, zoneRect.height - buttonRect.height - padding);
+      const nextLeft = clamp(Math.random() * maxLeft, padding, maxLeft);
+      const nextTop = clamp(Math.random() * maxTop, padding, maxTop);
+      button.style.left = `${nextLeft}px`;
+      button.style.top = `${nextTop}px`;
+    }
+
+    function resetRunawayButton(button, zone) {
+      const zoneRect = zone.getBoundingClientRect();
+      const btnRect = button.getBoundingClientRect();
+      const left = Math.max(12, zoneRect.width - btnRect.width - 16);
+      button.style.left = `${left}px`;
+      button.style.top = '22px';
+    }
+
+    function bindRunaway(button, zone) {
+      const run = (event) => {
+        event.preventDefault();
+        moveNoButton(button, zone);
+      };
+      button.addEventListener('mouseenter', run);
+      button.addEventListener('touchstart', run, { passive: false });
+      button.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'touch') run(event);
+      });
+    }
+
+    function generateFinalLink() {
+      const payload = {
+        sender: getResolvedSender(),
+        recipient: getResolvedRecipient(),
+        message: getResolvedMessage(),
+        paid: true,
+        coupon: state.appliedCoupon,
+        ts: Date.now()
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      return `${window.location.origin}${window.location.pathname}#proposal=${encoded}`;
+    }
+
+    function markPaymentSuccess(mockResponse) {
+      state.paymentCompleted = true;
+      state.generatedLink = generateFinalLink();
+      els.finalLinkInput.value = state.generatedLink;
+      els.finalLinkBox.classList.add('active');
+      setPaymentFeedback(`Payment callback received for payment id ${mockResponse.razorpay_payment_id}. In production, verify this payment on your backend before marking it successful.`, 'success');
+      updatePreviewContent();
+      resetFinalSuccessState();
+      showOnly('finalScreen');
+      resetRunawayButton(els.finalNoBtn, els.finalInteractionZone);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openRazorpayCheckout() {
+      if (state.finalPrice === 0) {
+
+    markPaymentSuccess({
+        razorpay_payment_id: "FREE_ACCESS"
+    });
+
+    return;
+}
+      setPaymentFeedback('Opening Razorpay checkout...', 'info');
+      if (!window.Razorpay) {
+        setPaymentFeedback('Razorpay SDK failed to load. Do not fake success here. Check network/CSP and retry.', 'error');
+        return;
+      }
+
+      // Backend required in production:
+      // 1. POST proposal data to your server.
+      // 2. Create Razorpay order using your secret key on the server.
+      // 3. Return order_id, amount, and currency.
+      // 4. Verify payment signature on the server after checkout success.
+      const options = {
+        key: 'rzp_live_SvD983baZpuP2A',
+        amount: state.finalPrice * 100,
+        currency: 'INR',
+        name: 'Proposal SaaS',
+        description: 'Permanent proposal link checkout',
+        image: '',
+        order_id: '',
+        handler(response) {
+          // Production: send response.razorpay_payment_id, response.razorpay_order_id,
+          // and response.razorpay_signature to your backend for verification.
+          markPaymentSuccess(response);
+        },
+        modal: {
+          ondismiss() {
+            setPaymentFeedback('Checkout closed before payment completion.', 'info');
+          }
+        },
+        prefill: {
+          name: getResolvedSender(),
+          email: ''
+        },
+        notes: {
+          recipient: getResolvedRecipient(),
+          coupon: state.appliedCoupon || 'NONE'
+        },
+        theme: {
+          color: '#ff4d8b'
+        }
+      };
+
+      try {
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function(response) {
+          const message = response?.error?.description || 'Payment failed. Please retry.';
+          setPaymentFeedback(message, 'error');
+        });
+        rzp.open();
+      } catch (error) {
+        setPaymentFeedback(`Unable to initialize Razorpay checkout: ${error.message}`, 'error');
+      }
+    }
+
+    function copyFinalLink() {
+      if (!state.generatedLink) return;
+      navigator.clipboard.writeText(state.generatedLink)
+        .then(() => setPaymentFeedback('Final proposal link copied to clipboard.', 'success'))
+        .catch(() => setPaymentFeedback('Unable to copy automatically. Please copy the link manually.', 'error'));
+    }
+
+    function hydrateFromHash() {
+      const hash = window.location.hash || '';
+      if (!hash.startsWith('#proposal=')) return;
+      const encoded = hash.replace('#proposal=', '');
+      try {
+        const decoded = decodeURIComponent(escape(atob(encoded)));
+        const payload = JSON.parse(decoded);
+        state.sender = payload.sender || '';
+        state.recipient = payload.recipient || '';
+        state.message = payload.message || '';
+        state.paymentCompleted = Boolean(payload.paid);
+
+        els.senderName.value = state.sender;
+        els.recipientName.value = state.recipient;
+        els.personalMessage.value = state.message;
+        updatePreviewContent();
+
+        if (state.paymentCompleted) {
+          showOnly('finalScreen');
+          els.paymentPanel.classList.remove('active');
+          resetFinalSuccessState();
+          resetRunawayButton(els.finalNoBtn, els.finalInteractionZone);
+        }
+      } catch (error) {
+        console.error('Invalid proposal hash payload', error);
+      }
+    }
+
+    els.recipientName.addEventListener('input', updatePreviewContent);
+    els.senderName.addEventListener('input', updatePreviewContent);
+    els.personalMessage.addEventListener('input', updatePreviewContent);
+    els.previewBtn.addEventListener('click', goToPreview);
+    els.backToBuilderBtn.addEventListener('click', () => showOnly('builderScreen'));
+    els.yesBtn.addEventListener('click', activatePreviewSuccess);
+    els.finalYesBtn.addEventListener('click', activateFinalSuccess);
+    els.generateLinkBtn.addEventListener('click', showPaymentPanel);
+    els.applyCouponBtn.addEventListener('click', applyCoupon);
+    els.payNowBtn.addEventListener('click', openRazorpayCheckout);
+    els.copyLinkBtn.addEventListener('click', copyFinalLink);
+
+    bindRunaway(els.noBtn, els.interactionZone);
+    bindRunaway(els.finalNoBtn, els.finalInteractionZone);
+
+    window.addEventListener('resize', () => {
+      resetRunawayButton(els.noBtn, els.interactionZone);
+      resetRunawayButton(els.finalNoBtn, els.finalInteractionZone);
+    });
+
+    createAmbientHearts();
+    createCardHearts(els.cardHearts, 16);
+    createCardHearts(els.finalCardHearts, 16);
+    refreshPricing();
+    updatePreviewContent();
+    hydrateFromHash();
+
+    if (!window.location.hash.startsWith('#proposal=')) {
+      requestAnimationFrame(() => {
+        resetRunawayButton(els.noBtn, els.interactionZone);
+        resetRunawayButton(els.finalNoBtn, els.finalInteractionZone);
+      });
+    }
+  </script>
+</body>
+</html>
