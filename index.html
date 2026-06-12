@@ -390,11 +390,11 @@
       <div class="form-grid">
         <div class="field">
           <label for="inp-recipient">Their Name</label>
-          <input id="inp-recipient" type="text" maxlength="60" placeholder="e.g. Aastha" autocomplete="off" />
+          <input id="inp-recipient" type="text" maxlength="60" placeholder="e.g. babe" autocomplete="off" />
         </div>
         <div class="field">
           <label for="inp-sender">Your Name</label>
-          <input id="inp-sender" type="text" maxlength="60" placeholder="e.g. Joydeep" autocomplete="off" />
+          <input id="inp-sender" type="text" maxlength="60" placeholder="e.g. yours" autocomplete="off" />
         </div>
         <div class="field">
           <label for="inp-message">Your Message</label>
@@ -470,7 +470,7 @@
           <input id="couponInp" class="coupon-inp" type="text" placeholder="Coupon code" maxlength="20" autocomplete="off" />
           <button id="btn-coupon" class="btn btn-secondary" type="button">Apply</button>
         </div>
-        <p class="feedback" id="couponMsg">Available: LOVE50 · FIRST20 · JOY30</p>
+        
 
         <button id="btn-pay" class="btn btn-primary" type="button" style="margin-top:4px;">Pay with Razorpay</button>
         <p class="feedback" id="payMsg" style="margin-top:10px;">Secure checkout powered by Razorpay.</p>
@@ -701,12 +701,22 @@ function buildLink() {
 function onPaymentSuccess(resp) {
   st.paid = true;
   st.link = buildLink();
+
   els.linkInp.value = st.link;
+  console.log("GENERATED LINK:", st.link);
   els.linkBox.classList.add('show');
-  setMsg(els.payMsg, `Payment successful! Your link is ready below.`, 'ok');
+
+  setMsg(
+    els.payMsg,
+    'Payment successful! Copy your link below.',
+    'ok'
+  );
+
   updateContent();
-  showOnly('finalPanel');
-  requestAnimationFrame(() => resetNo(els.finalNoBtn, els.finalZone));
+
+  // REMOVE THESE TWO LINES
+  // showOnly('finalPanel');
+  // requestAnimationFrame(() => resetNo(els.finalNoBtn, els.finalZone));
 }
 
 /* ── RAZORPAY ───────────────────────────────────── */
